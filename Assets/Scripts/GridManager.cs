@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
 using UnityEngine;
 
 public class GridManager : MonoBehaviour
@@ -8,7 +9,7 @@ public class GridManager : MonoBehaviour
     private GameObject ghostObject;
     [SerializeField] float gridSize;
 
-    private HashSet<Vector2> occupiedPositions = new HashSet<Vector2>();
+    private HashSet<Vector2Int> occupiedPositions = new HashSet<Vector2Int>();
 
 
     private void Start()
@@ -35,7 +36,7 @@ public class GridManager : MonoBehaviour
         foreach(Renderer renderer in renderers)
         {
             Material mat = renderer.material;
-            Color color = mat.color;
+            UnityEngine.Color color = mat.color;
             color.a = 0.5f;
             mat.color = color;
 
@@ -56,28 +57,23 @@ public class GridManager : MonoBehaviour
         
         if (Physics.Raycast(ray, out RaycastHit hit))
         {
-            Vector3 point = hit.point;
-            Vector3 snappedPos = new Vector3(
-                Mathf.Round(point.x / gridSize) * gridSize,
-                Mathf.Round(point.y / gridSize) * gridSize,
-                Mathf.Round(point.z / gridSize) * gridSize);
-
+            Vector2Int gridCell = WorldToGrid(hit.point);
+            Vector3 snappedPos = GridToWorld(gridCell);
             ghostObject.transform.position = snappedPos;
-            Vector2 convertedPos = new Vector2(snappedPos.x, snappedPos.z);
-            if (occupiedPositions.Contains(convertedPos))
+            if (occupiedPositions.Contains(gridCell))
             {
-                SetGhostColor(Color.red);
+                SetGhostColor(UnityEngine.Color.red);
             }
             else
             {
-                SetGhostColor(new Color(1f, 1f, 1f, 0.5f));
+                SetGhostColor(new UnityEngine.Color(1f, 1f, 1f, 0.5f));
             }
 
 
         }
     }
 
-    void SetGhostColor(Color color)
+    void SetGhostColor(UnityEngine.Color color)
     {
         Renderer[] renderers = ghostObject.GetComponentsInChildren<Renderer>();
 
@@ -90,13 +86,26 @@ public class GridManager : MonoBehaviour
 
     void PlaceObject()
     {
-        Vector3 placePos = ghostObject.transform.position;
-        Vector2 convertedPos = new Vector2(placePos.x, placePos.z);
-
-        if (!occupiedPositions.Contains(convertedPos))
+        Vector2Int gridCell = WorldToGrid(ghostObject.transform.position);
+        if (!occupiedPositions.Contains(gridCell))
         {
+            Vector3 placePos = GridToWorld(gridCell);
             Instantiate(wallPrefab, placePos, Quaternion.identity);
-            occupiedPositions.Add(convertedPos);
+            occupiedPositions.Add(gridCell);
         }
+    }
+
+    Vector2Int WorldToGrid(Vector3 worldPos)
+    {
+        int x = Mathf.RoundToInt(worldPos.x / gridSize);
+        int z = Mathf.RoundToInt(worldPos.z / gridSize);
+
+        return new Vector2Int(x, z);
+
+    }
+
+    Vector3 GridToWorld(Vector2Int gridPos)
+    {
+        return new Vector3(gridPos.x * gridSize, 0f, gridPos.y * gridSize);
     }
 }
