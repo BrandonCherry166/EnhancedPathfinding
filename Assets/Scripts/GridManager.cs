@@ -8,7 +8,7 @@ public class GridManager : MonoBehaviour
     private GameObject ghostObject;
     [SerializeField] float gridSize;
 
-    private HashSet<Vector3> occupiedPositions = new HashSet<Vector3>();
+    private HashSet<Vector2> occupiedPositions = new HashSet<Vector2>();
 
 
     private void Start()
@@ -63,8 +63,8 @@ public class GridManager : MonoBehaviour
                 Mathf.Round(point.z / gridSize) * gridSize);
 
             ghostObject.transform.position = snappedPos;
-
-            if (occupiedPositions.Contains(snappedPos))
+            Vector2 convertedPos = new Vector2(snappedPos.x, snappedPos.z);
+            if (occupiedPositions.Contains(convertedPos))
             {
                 SetGhostColor(Color.red);
             }
@@ -91,10 +91,12 @@ public class GridManager : MonoBehaviour
     void PlaceObject()
     {
         Vector3 placePos = ghostObject.transform.position;
+        Vector2 convertedPos = new Vector2(placePos.x, placePos.z);
 
-        if (!occupiedPositions.Contains(placePos))
+        if (!occupiedPositions.Contains(convertedPos))
         {
             Instantiate(wallPrefab, placePos, Quaternion.identity);
+            occupiedPositions.Add(convertedPos);
         }
     }
 }
