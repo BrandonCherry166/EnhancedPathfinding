@@ -770,6 +770,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1568921809193765474, guid: 7040ba39619752c4094a1a428c7eb769, type: 3}
+      propertyPath: sourcePrefab
+      value: 
+      objectReference: {fileID: 1037764709896090390, guid: 5e32c1d45691c52409a1385a2545a632, type: 3}
+    - target: {fileID: 1568921809193765474, guid: 7040ba39619752c4094a1a428c7eb769, type: 3}
+      propertyPath: targetPrefab
+      value: 
+      objectReference: {fileID: 1037764709896090390, guid: 014609c7ef3e2224ca5e514805fd4fca, type: 3}
+    - target: {fileID: 1568921809193765474, guid: 7040ba39619752c4094a1a428c7eb769, type: 3}
+      propertyPath: obstaclePrefab
+      value: 
+      objectReference: {fileID: 1037764709896090390, guid: 8302425a2d2efba4e98d37d0050cb820, type: 3}
     - target: {fileID: 1568921809193765475, guid: 7040ba39619752c4094a1a428c7eb769, type: 3}
       propertyPath: m_Name
       value: GridManager
