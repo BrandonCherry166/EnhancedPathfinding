@@ -39,6 +39,8 @@ public class GridManager : MonoBehaviour
     private Vector2Int? sourcePos;
     private Vector2Int? targetPos;
 
+    private Vector2Int? agentPos;
+
     private void Start()
     {
         CreateGhostObject(obstaclePrefab);
@@ -198,7 +200,7 @@ public class GridManager : MonoBehaviour
         // Place Agent
         else if (currentMode == PlacementMode.PlaceAgent)
         {
-            SetMarker(ref agentInstance, agentPrefab, ref sourcePos, gridCell);
+            SetMarker(ref agentInstance, agentPrefab, ref agentPos, gridCell);
         }
     }
 
@@ -284,6 +286,23 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-        // Pathfinding logic here
+        GameObject[] agents = GameObject.FindGameObjectsWithTag("Agent");
+
+        for (int i = 0; i < agents.Length; i++)
+        {
+            Debug.Log("Check 1");
+            List<Vector2Int> path = agents[i].GetComponent<Pathfinding>().FindPath(sourcePos.Value, targetPos.Value, occupiedPositions);
+            Debug.Log("Check 2.5");
+            if (path != null && agentInstance != null)
+            {
+                List<Vector3> worldPath = new List<Vector3>();
+                foreach(var cell in path)
+                {
+                    worldPath.Add(GridToWorld(cell));
+                }
+                Debug.Log("Check 2.75");
+                agents[i].GetComponent<FollowPath>().SetPath(worldPath);
+            }
+        }
     }
 }

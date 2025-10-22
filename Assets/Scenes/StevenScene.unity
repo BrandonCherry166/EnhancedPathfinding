@@ -771,6 +771,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1568921809193765474, guid: 7040ba39619752c4094a1a428c7eb769, type: 3}
+      propertyPath: agentPrefab
+      value: 
+      objectReference: {fileID: 1037764709896090390, guid: 7febce8e59998f24081951b20cd933a1, type: 3}
+    - target: {fileID: 1568921809193765474, guid: 7040ba39619752c4094a1a428c7eb769, type: 3}
       propertyPath: sourcePrefab
       value: 
       objectReference: {fileID: 1037764709896090390, guid: 5e32c1d45691c52409a1385a2545a632, type: 3}

@@ -12,6 +12,7 @@ public class FollowPath : MonoBehaviour
     {
         path = newPath;
         currentIndex = 0;
+        transform.position = path[0];
     }
 
     private void Update()
@@ -23,7 +24,6 @@ public class FollowPath : MonoBehaviour
 
         Vector3 target = path[currentIndex];
         transform.position = Vector3.MoveTowards(transform.position, target, speed * Time.deltaTime);
-
         if (Vector3.Distance(transform.position, target) < 0.05f)
         {
             currentIndex++;
