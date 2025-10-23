@@ -42,6 +42,7 @@ public class GridManager : MonoBehaviour
     private Vector2Int? agentPos;
 
     public bool isRunning = false;
+    private List <Vector2Int> currentPath;
 
     private void Start()
     {
@@ -188,7 +189,7 @@ public class GridManager : MonoBehaviour
 
             if (isRunning)
             {
-                ReRunPathfinding();
+                ReRunPathfinding(gridCell);
             }
         }
 
@@ -306,15 +307,31 @@ public class GridManager : MonoBehaviour
                 {
                     worldPath.Add(GridToWorld(cell));
                 }
+                currentPath = path;
                 agents[i].GetComponent<FollowPath>().SetPath(worldPath);
             }
         }
     }
 
-    public void ReRunPathfinding()
+    public void ReRunPathfinding(Vector2Int newCell)
     {
+        bool flag = false;
         if (!sourcePos.HasValue || !targetPos.HasValue)
         {
+            return;
+        }
+
+        foreach(var cell in currentPath)
+        {
+            if (cell == newCell)
+            {
+                flag = true;
+            }
+        }
+
+        if (!flag)
+        {
+            Debug.Log("Path Not Updated");
             return;
         }
         isRunning = true;
@@ -331,6 +348,8 @@ public class GridManager : MonoBehaviour
                 {
                     worldPath.Add(GridToWorld(cell));
                 }
+                currentPath = path;
+                Debug.Log("Path Updated");
                 agents[i].GetComponent<FollowPath>().SetPath(worldPath);
             }
         }
