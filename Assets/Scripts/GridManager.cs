@@ -27,7 +27,9 @@ public class GridManager : MonoBehaviour
 
     [Header("Grid Settings")]
     [SerializeField] float gridSize;
+    [SerializeField] LayerMask obstacleLayer;
 
+    private List<GameObject> spawnedAgents = new List<GameObject>();
     private List<GameObject> spawnedObstacles = new List<GameObject>();
     private GameObject sourceInstance;
     private GameObject targetInstance;
@@ -228,7 +230,13 @@ public class GridManager : MonoBehaviour
         // Place Agent
         else if (currentMode == PlacementMode.PlaceAgent)
         {
-            SetMarker(ref agentInstance, agentPrefab, ref agentPos, gridCell);
+            if (!occupiedPositions.Contains(gridCell))
+            {
+                Vector3 placePos = GridToWorld(gridCell);
+                GameObject newAgent = Instantiate(agentPrefab, placePos, Quaternion.identity);
+                spawnedAgents.Add(newAgent);
+                occupiedPositions.Add(gridCell);
+            }
         }
     }
 
@@ -320,6 +328,12 @@ public class GridManager : MonoBehaviour
         }
         spawnedObstacles.Clear();
 
+        foreach (GameObject agent in spawnedAgents)
+        {
+            Destroy(agent);
+        }
+        spawnedAgents.Clear();
+
         // Destory Markers
         if (sourceInstance != null) Destroy(sourceInstance);
         if (targetInstance != null) Destroy(targetInstance);
@@ -357,18 +371,26 @@ public class GridManager : MonoBehaviour
 
     public void RunPathfinding()
     {
-        if (!sourcePos.HasValue || !targetPos.HasValue)
+        if (spawnedAgents.Count == 0 || !targetPos.HasValue)
         {
+            if (spawnedAgents.Count == 0) Debug.LogWarning("No agents placed to run!");
+            if (!targetPos.HasValue) Debug.LogWarning("Target not set!");
             return;
         }
+
         isRunning = true;
 
         GameObject[] agents = GameObject.FindGameObjectsWithTag("Agent");
 
         for (int i = 0; i < agents.Length; i++)
         {
-            List<Vector2Int> path = agents[i].GetComponent<Pathfinding>().FindPath(sourcePos.Value, targetPos.Value, occupiedPositions);
-            if (path != null && agentInstance != null)
+            if (agents[i].name == "Ghost") continue;
+
+            Vector2Int agentGridPos = WorldToGrid(agents[i].transform.position);
+
+            List<Vector2Int> path = agents[i].GetComponent<Pathfinding>().FindPath(agentGridPos, targetPos.Value, occupiedPositions);
+
+            if (path != null)
             {
                 List<Vector3> worldPath = new List<Vector3>();
                 foreach(var cell in path)
@@ -378,18 +400,23 @@ public class GridManager : MonoBehaviour
                 currentPath = path;
                 agents[i].GetComponent<FollowPath>().SetPath(worldPath);
             }
+            else
+            {
+                // Stop if no path
+                agents[i].GetComponent<FollowPath>().SetPath(new List<Vector3>());
+            }
         }
     }
 
     public void ReRunPathfinding(Vector2Int newCell)
     {
         bool flag = false;
-        if (!sourcePos.HasValue || !targetPos.HasValue)
+        if (spawnedAgents.Count == 0 || !targetPos.HasValue)
         {
             return;
         }
 
-        foreach(var cell in currentPath)
+        foreach (var cell in currentPath)
         {
             if (cell == newCell)
             {
@@ -408,8 +435,10 @@ public class GridManager : MonoBehaviour
 
         for (int i = 0; i < agents.Length; i++)
         {
+            if (agents[i].name == "Ghost") continue;
+
             List<Vector2Int> path = agents[i].GetComponent<Pathfinding>().FindPath(WorldToGrid(agents[i].transform.position), targetPos.Value, occupiedPositions);
-            if (path != null && agentInstance != null)
+            if (path != null)
             {
                 List<Vector3> worldPath = new List<Vector3>();
                 foreach (var cell in path)
@@ -423,5 +452,6 @@ public class GridManager : MonoBehaviour
         }
     }
 
+    // Path Smoothing
 
 }
