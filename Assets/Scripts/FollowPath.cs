@@ -12,8 +12,22 @@ public class FollowPath : MonoBehaviour
     private GridManager gridManager;
     private float currentGridSize = 1f;
 
+    // Animation
+    private Animator animator;
+    private readonly int isRunningHash = Animator.StringToHash("IsRunning");
+
     void Start()
     {
+        animator = GetComponent<Animator>();
+        if (animator == null)
+        {
+            animator = GetComponentInChildren<Animator>();
+            if (animator == null)
+            {
+                Debug.LogError("I am broken :( The animation", this);
+            }
+        }
+
         GameObject gameObject = GameObject.FindGameObjectWithTag("GridManager");
         if (gameObject != null)
         {
@@ -23,6 +37,11 @@ public class FollowPath : MonoBehaviour
         else
         {
             Debug.LogError("FollowPath cannot find the GridManager!", this);
+        }
+
+        if (animator != null)
+        {
+            animator.SetBool(isRunningHash, false);
         }
     }
 
@@ -36,6 +55,14 @@ public class FollowPath : MonoBehaviour
             currentGridSize = gridManager.gridSize;
         }
 
+        if (animator != null)
+        {
+            // Start running
+            bool shouldRun = (path != null && newPath.Count > 0);
+            Debug.Log($"SetPath: Setting IsRunning to {shouldRun}");
+            animator.SetBool(isRunningHash, shouldRun);
+        }
+
         /*
         path = newPath;
         currentIndex = 0;
@@ -47,7 +74,20 @@ public class FollowPath : MonoBehaviour
     {
         if (path == null || path.Count == 0 || currentIndex >= path.Count || gridManager == null)
         {
+            // Check if it can run
+            if (animator != null && animator.GetBool(isRunningHash))
+            {
+                Debug.Log($"Update (No Path/End): Setting IsRunning to false");
+                animator.SetBool(isRunningHash, false);
+            }
+
             return;
+        }
+
+        if (animator != null && !animator.GetBool(isRunningHash))
+        {
+            Debug.Log($"Update (Has Path): Setting IsRunning to true");
+            animator.SetBool(isRunningHash, true);
         }
 
         currentGridSize = gridManager.gridSize;
@@ -84,6 +124,12 @@ public class FollowPath : MonoBehaviour
     {
         path = null;
         currentIndex = 0;
+
+        if (animator != null)
+        {
+            Debug.Log($"EndOfPath: Setting IsRunning to false");
+            animator.SetBool(isRunningHash, false);
+        }
 
         string agentName = gameObject.name;
         if (agentName.StartsWith("agent") && gridManager != null)

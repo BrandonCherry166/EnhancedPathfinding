@@ -54,7 +54,7 @@ public class GridManager : MonoBehaviour
 
     public bool isRunning = false;
     public List<bool> runningList;
-    private Dictionary<int, List <Vector2Int>> currentPaths;
+    private Dictionary<int, List<Vector2Int>> currentPaths;
 
     int id = 0;
 
@@ -99,7 +99,7 @@ public class GridManager : MonoBehaviour
                     PlaceObject();
                 }
             }
-            
+
             if (Input.GetMouseButton(1))
             {
                 if (currentMode == PlacementMode.PlaceObstacle)
@@ -254,9 +254,9 @@ public class GridManager : MonoBehaviour
             {
                 return;
             }
-            
 
-           ReRunPathfinding(gridCell, false);
+
+            ReRunPathfinding(gridCell, false);
 
         }
 
@@ -331,7 +331,7 @@ public class GridManager : MonoBehaviour
                         // Rerun
                         if (wasOnPath)
                         {
-                            ReRunPathfinding(WorldToGrid(obstacleToRemove.transform.position), false); 
+                            ReRunPathfinding(WorldToGrid(obstacleToRemove.transform.position), false);
                         }
                     }
                 }
@@ -462,7 +462,7 @@ public class GridManager : MonoBehaviour
             if (path != null)
             {
                 List<Vector3> worldPath = new List<Vector3>();
-                foreach(var cell in path)
+                foreach (var cell in path)
                 {
                     worldPath.Add(GridToWorld(cell));
                 }
@@ -485,7 +485,7 @@ public class GridManager : MonoBehaviour
     {
         ClearPath();
 
-        Debug.Log("Rerun"); 
+        Debug.Log("Rerun");
         if (spawnedAgents.Count == 0 || !targetPos.HasValue)
         {
             return;
@@ -514,7 +514,7 @@ public class GridManager : MonoBehaviour
             }
         }
 
-         GameObject[] agents = GameObject.FindGameObjectsWithTag("Agent").OrderBy(a => a.name).ToArray();
+        GameObject[] agents = GameObject.FindGameObjectsWithTag("Agent").OrderBy(a => a.name).ToArray();
 
 
         for (int i = 0; i < agents.Length; i++)

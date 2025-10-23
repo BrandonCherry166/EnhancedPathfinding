@@ -328,6 +328,17 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &823676513 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 24997020294752935, guid: f82c7ad641b653144a9e10eba9ae39f0, type: 3}
+  m_PrefabInstance: {fileID: 1137927912}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2da0c512f12947e489f739169773d7ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &997947551
 GameObject:
   m_ObjectHideFlags: 0
@@ -403,6 +414,34 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 24997020294752935, guid: f82c7ad641b653144a9e10eba9ae39f0, type: 3}
+      propertyPath: m_OnEndEdit.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 24997020294752935, guid: f82c7ad641b653144a9e10eba9ae39f0, type: 3}
+      propertyPath: m_OnEndEdit.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 24997020294752935, guid: f82c7ad641b653144a9e10eba9ae39f0, type: 3}
+      propertyPath: m_OnEndEdit.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 85142353}
+    - target: {fileID: 24997020294752935, guid: f82c7ad641b653144a9e10eba9ae39f0, type: 3}
+      propertyPath: m_OnEndEdit.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 24997020294752935, guid: f82c7ad641b653144a9e10eba9ae39f0, type: 3}
+      propertyPath: m_OnEndEdit.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: UpdateGridSize
+      objectReference: {fileID: 0}
+    - target: {fileID: 24997020294752935, guid: f82c7ad641b653144a9e10eba9ae39f0, type: 3}
+      propertyPath: m_OnEndEdit.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: GridManager, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 24997020294752935, guid: f82c7ad641b653144a9e10eba9ae39f0, type: 3}
+      propertyPath: m_OnEndEdit.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
     - target: {fileID: 954535331686658672, guid: f82c7ad641b653144a9e10eba9ae39f0, type: 3}
       propertyPath: m_Colors.m_SelectedColor.b
       value: 0.50980395
@@ -781,7 +820,7 @@ PrefabInstance:
     - target: {fileID: 1568921809193765474, guid: 7040ba39619752c4094a1a428c7eb769, type: 3}
       propertyPath: agentPrefab
       value: 
-      objectReference: {fileID: 1037764709896090390, guid: 7febce8e59998f24081951b20cd933a1, type: 3}
+      objectReference: {fileID: 1037764709896090390, guid: 78a30545829ee7e43804cb62443f5be3, type: 3}
     - target: {fileID: 1568921809193765474, guid: 7040ba39619752c4094a1a428c7eb769, type: 3}
       propertyPath: sourcePrefab
       value: 
@@ -798,6 +837,10 @@ PrefabInstance:
       propertyPath: pathTilePrefab
       value: 
       objectReference: {fileID: 8181267146607274530, guid: e0963cef12a93074bb86b1445c669f7f, type: 3}
+    - target: {fileID: 1568921809193765474, guid: 7040ba39619752c4094a1a428c7eb769, type: 3}
+      propertyPath: gridSizeInputField
+      value: 
+      objectReference: {fileID: 823676513}
     - target: {fileID: 1568921809193765474, guid: 7040ba39619752c4094a1a428c7eb769, type: 3}
       propertyPath: obstacleLayer.m_Bits
       value: 8
