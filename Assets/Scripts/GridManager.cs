@@ -27,6 +27,7 @@ public class GridManager : MonoBehaviour
     [SerializeField] GameObject sourcePrefab;
     [SerializeField] GameObject targetPrefab;
     [SerializeField] GameObject agentPrefab;
+    [SerializeField] GameObject pathTilePrefab;
 
     [Header("Grid Settings")]
     [SerializeField] float gridSize;
@@ -34,6 +35,8 @@ public class GridManager : MonoBehaviour
 
     private List<GameObject> spawnedAgents = new List<GameObject>();
     private List<GameObject> spawnedObstacles = new List<GameObject>();
+    private List<GameObject> spawnedPathTiles = new List<GameObject>();
+
     private GameObject sourceInstance;
     private GameObject targetInstance;
     private GameObject agentInstance;
@@ -325,7 +328,11 @@ public class GridManager : MonoBehaviour
         // Clear old Pos
         if (instance != null)
         {
-            occupiedPositions.Remove(gridPos.Value);
+            if (prefab != targetPrefab)
+            {
+                if (gridPos.HasValue)
+                    occupiedPositions.Remove(gridPos.Value);
+            }
             Destroy(instance);
         }
 
@@ -333,7 +340,12 @@ public class GridManager : MonoBehaviour
         Vector3 placePos = GridToWorld(newCell);
         instance = Instantiate(prefab, placePos, Quaternion.identity);
         gridPos = newCell;
-        occupiedPositions.Add(newCell);
+        //occupiedPositions.Add(newCell);
+
+        if (prefab != targetPrefab)
+        {
+            occupiedPositions.Add(newCell);
+        }
     }
 
     Vector2Int WorldToGrid(Vector3 worldPos)
@@ -372,6 +384,7 @@ public class GridManager : MonoBehaviour
 
         // Clear
         occupiedPositions.Clear();
+        ClearPath();
         sourcePos = null;
         targetPos = null;
 
@@ -416,6 +429,7 @@ public class GridManager : MonoBehaviour
         isRunning = true;
 
         GameObject[] agents = GameObject.FindGameObjectsWithTag("Agent").OrderBy(a => a.name).ToArray();
+        ClearPath();
 
         for (int i = 0; i < agents.Length; i++)
         {
@@ -434,7 +448,10 @@ public class GridManager : MonoBehaviour
                     worldPath.Add(GridToWorld(cell));
                 }
                 currentPaths[i] = path;
-                agents[i].GetComponent<FollowPath>().SetPath(worldPath);
+
+                List<Vector3> smoothedWorldPath = SmoothPath(worldPath);
+                agents[i].GetComponent<FollowPath>().SetPath(smoothedWorldPath);
+                VisualizePath(smoothedWorldPath);
             }
             else
             {
@@ -446,6 +463,8 @@ public class GridManager : MonoBehaviour
 
     public void ReRunPathfinding(Vector2Int newCell, bool addingCell)
     {
+        ClearPath();
+
         Debug.Log("Rerun"); 
         if (spawnedAgents.Count == 0 || !targetPos.HasValue)
         {
@@ -492,12 +511,87 @@ public class GridManager : MonoBehaviour
                 }
                 currentPaths[i] = path;
                 Debug.Log("Path Updated");
-                agents[i].GetComponent<FollowPath>().SetPath(worldPath);
+
+                List<Vector3> smoothedWorldPath = SmoothPath(worldPath);
+
+                //agents[i].GetComponent<FollowPath>().SetPath(worldPath);
+                agents[i].GetComponent<FollowPath>().SetPath(smoothedWorldPath);
+                VisualizePath(smoothedWorldPath);
                 StartCoroutine(agents[i].GetComponent<FollowPath>().TryEndPathFollow(i));
             }
         }
     }
 
+    // Path
+    void VisualizePath(List<Vector3> path)
+    {
+        Quaternion tileRotation = Quaternion.Euler(90, 0, 0);
+        float tileScale = gridSize * 0.9f;
+        Vector3 tileScaleVector = new Vector3(tileScale, tileScale, 1f);
+
+        foreach (Vector3 pos in path)
+        {
+            // Tiles
+            Vector3 tilePos = new Vector3(pos.x, 0.05f, pos.z);
+            GameObject tile = Instantiate(pathTilePrefab, tilePos, tileRotation);
+            tile.transform.localScale = tileScaleVector;
+            spawnedPathTiles.Add(tile);
+        }
+    }
+
+    // Clear Path
+    void ClearPath()
+    {
+        foreach (GameObject tile in spawnedPathTiles)
+        {
+            Destroy(tile);
+        }
+        spawnedPathTiles.Clear();
+    }
+
     // Path Smoothing
+    List<Vector3> SmoothPath(List<Vector3> path)
+    {
+        if (path == null || path.Count < 2)
+        {
+            return path;
+        }
+
+        List<Vector3> smoothedPath = new List<Vector3>();
+        smoothedPath.Add(path[0]);
+
+        int currentIndex = 0;
+
+        // Check ahead for blockage
+        while (currentIndex < path.Count - 1)
+        {
+            int lookIndex = currentIndex + 1;
+
+            while (lookIndex < path.Count - 1)
+            {
+                Vector3 startPos = path[currentIndex];
+                Vector3 endPos = path[lookIndex + 1];
+
+                // Make sure it is not looking at floor
+                startPos.y += 0.5f;
+                endPos.y += 0.5f;
+
+                // If LoS is hit then blocked
+                if (Physics.Linecast(startPos, endPos, obstacleLayer))
+                {
+                    break;
+                }
+                else
+                {
+                    lookIndex++;
+                }
+            }
+
+            smoothedPath.Add(path[lookIndex]);
+            currentIndex = lookIndex;
+        }
+
+        return smoothedPath;
+    }
 
 }
