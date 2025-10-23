@@ -55,11 +55,31 @@ public class GridManager : MonoBehaviour
         {
             UpdateGhostPosition();
 
-            if (Input.GetMouseButtonDown(0))
+            if (EventSystem.current.IsPointerOverGameObject())
             {
-                if (!EventSystem.current.IsPointerOverGameObject())
+                return;
+            }
+
+            if (currentMode == PlacementMode.PlaceObstacle)
+            {
+                if (Input.GetMouseButton(0))
                 {
                     PlaceObject();
+                }
+            }
+            else
+            {
+                if (Input.GetMouseButton(0))
+                {
+                    PlaceObject();
+                }
+            }
+            
+            if (Input.GetMouseButton(1))
+            {
+                if (currentMode == PlacementMode.PlaceObstacle)
+                {
+                    DeleteObject();
                 }
             }
 
@@ -212,6 +232,54 @@ public class GridManager : MonoBehaviour
         }
     }
 
+    //Delete
+    void DeleteObject()
+    {
+        Vector2Int gridCell = WorldToGrid(ghostObject.transform.position);
+
+        if (occupiedPositions.Contains(gridCell))
+        {
+            GameObject obstacleToRemove = null;
+
+            // Loop through obstacles
+            foreach (GameObject obstacle in spawnedObstacles)
+            {
+                if (WorldToGrid(obstacle.transform.position) == gridCell)
+                {
+                    obstacleToRemove = obstacle;
+                    break;
+                }
+            }
+
+            // Remove if Found
+            if (obstacleToRemove != null)
+            {
+                spawnedObstacles.Remove(obstacleToRemove);
+                Destroy(obstacleToRemove);
+                occupiedPositions.Remove(gridCell);
+
+                if (isRunning)
+                {
+                    bool wasOnPath = false;
+                    foreach (var cell in currentPath)
+                    {
+                        if (cell == gridCell)
+                        {
+                            wasOnPath = true;
+                            break;
+                        }
+                    }
+
+                    // Rerun
+                    if (wasOnPath)
+                    {
+                        RunPathfinding();
+                    }
+                }
+            }
+        }
+    }
+
     // Using to help with placing.
     void SetMarker(ref GameObject instance, GameObject prefab, ref Vector2Int? gridPos, Vector2Int newCell)
     {
@@ -354,4 +422,6 @@ public class GridManager : MonoBehaviour
             }
         }
     }
+
+
 }
