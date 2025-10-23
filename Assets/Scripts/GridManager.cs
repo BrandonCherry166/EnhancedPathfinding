@@ -377,6 +377,7 @@ public class GridManager : MonoBehaviour
 
         runningList.Clear();
         isRunning = false;
+        id = 0;
     }
 
     public void PlaceObstacle()
