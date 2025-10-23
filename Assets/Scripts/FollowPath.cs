@@ -24,7 +24,7 @@ public class FollowPath : MonoBehaviour
 
         Vector3 target = path[currentIndex];
         transform.position = Vector3.MoveTowards(transform.position, target, speed * Time.deltaTime);
-        if (Vector3.Distance(transform.position, target) < 0.05f)
+        if (Vector3.Distance(transform.position, target) < 1.0f) // Changed from 0.05f
         {
             currentIndex++;
         }

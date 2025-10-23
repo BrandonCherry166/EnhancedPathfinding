@@ -32,6 +32,7 @@ public class GridManager : MonoBehaviour
     [Header("Grid Settings")]
     [SerializeField] float gridSize;
     [SerializeField] LayerMask obstacleLayer;
+    [SerializeField] int splineSamplesPerSegment = 5;
 
     private List<GameObject> spawnedAgents = new List<GameObject>();
     private List<GameObject> spawnedObstacles = new List<GameObject>();
@@ -82,7 +83,7 @@ public class GridManager : MonoBehaviour
             }
             else
             {
-                if (Input.GetMouseButton(0))
+                if (Input.GetMouseButtonDown(0))
                 {
                     PlaceObject();
                 }
@@ -449,8 +450,9 @@ public class GridManager : MonoBehaviour
                 }
                 currentPaths[i] = path;
 
-                List<Vector3> smoothedWorldPath = SmoothPath(worldPath);
+                List<Vector3> smoothedWorldPath = InterpolatePathWithSplines(worldPath, splineSamplesPerSegment);
                 agents[i].GetComponent<FollowPath>().SetPath(smoothedWorldPath);
+                VisualizePath(worldPath);
                 VisualizePath(smoothedWorldPath);
             }
             else
@@ -512,10 +514,11 @@ public class GridManager : MonoBehaviour
                 currentPaths[i] = path;
                 Debug.Log("Path Updated");
 
-                List<Vector3> smoothedWorldPath = SmoothPath(worldPath);
+                List<Vector3> smoothedWorldPath = InterpolatePathWithSplines(worldPath, splineSamplesPerSegment);
 
                 //agents[i].GetComponent<FollowPath>().SetPath(worldPath);
                 agents[i].GetComponent<FollowPath>().SetPath(smoothedWorldPath);
+                VisualizePath(worldPath);
                 VisualizePath(smoothedWorldPath);
                 StartCoroutine(agents[i].GetComponent<FollowPath>().TryEndPathFollow(i));
             }
@@ -594,4 +597,60 @@ public class GridManager : MonoBehaviour
         return smoothedPath;
     }
 
+    // Quadratic Bezier
+    Vector3 QuadraticBezier(Vector3 startPoint, Vector3 controlPoint, Vector3 endPoint, float t)
+    {
+        float u = 1.0f - t;
+        float tt = t * t;
+        float uu = u * u;
+
+        Vector3 point = uu * startPoint;
+        point += 2 * u * t * controlPoint;
+        point += tt * endPoint;
+
+        return point;
+    }
+
+    // Utilize Splines
+    List<Vector3> InterpolatePathWithSplines(List<Vector3> path, int samplesPerSegment)
+    {
+        if (path == null || path.Count < 2) return path;
+        if (samplesPerSegment < 1) samplesPerSegment = 1;
+
+        List<Vector3> interpolatedPath = new List<Vector3>();
+        interpolatedPath.Add(path[0]);
+
+        if (path.Count == 2)
+        {
+            for (int i = 1; i < samplesPerSegment; ++i)
+            {
+                float t = (float)i / samplesPerSegment;
+                interpolatedPath.Add(Vector3.Lerp(path[0], path[1], t));
+            }
+
+            interpolatedPath.Add(path[1]);
+            return interpolatedPath;
+        }
+
+        for (int i = 0; i < path.Count - 1; ++i)
+        {
+            Vector3 p0 = path[i];
+            Vector3 p1 = path[i + 1];
+
+            Vector3 p2 = (i + 2 < path.Count) ? path[i + 2] : p1;
+
+            for (int sampleIndex = 1; sampleIndex <= samplesPerSegment; ++sampleIndex)
+            {
+                float t = (float)sampleIndex / samplesPerSegment;
+                Vector3 interpolatedPoint = QuadraticBezier(p0, p1, p2, t);
+                interpolatedPath.Add(interpolatedPoint);
+            }
+        }
+        if (interpolatedPath[interpolatedPath.Count - 1] != path[path.Count - 1])
+        {
+            interpolatedPath.Add(path[path.Count - 1]);
+        }
+
+        return interpolatedPath;
+    }
 }
