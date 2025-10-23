@@ -5,6 +5,7 @@ using System.Linq;
 //using System.Drawing; //Might cause conflict
 using UnityEngine;
 using UnityEngine.EventSystems;
+using TMPro;
 using static Unity.IO.LowLevel.Unsafe.AsyncReadManagerMetrics;
 
 public class GridManager : MonoBehaviour
@@ -30,9 +31,10 @@ public class GridManager : MonoBehaviour
     [SerializeField] GameObject pathTilePrefab;
 
     [Header("Grid Settings")]
-    [SerializeField] float gridSize;
+    [SerializeField] public float gridSize = 1f;
     [SerializeField] LayerMask obstacleLayer;
     [SerializeField] int splineSamplesPerSegment = 5;
+    [SerializeField] private TMP_InputField gridSizeInputField;
 
     private List<GameObject> spawnedAgents = new List<GameObject>();
     private List<GameObject> spawnedObstacles = new List<GameObject>();
@@ -61,6 +63,15 @@ public class GridManager : MonoBehaviour
         CreateGhostObject(obstaclePrefab);
         currentPaths = new();
         runningList = new();
+
+        if (gridSizeInputField != null)
+        {
+            gridSizeInputField.text = gridSize.ToString();
+        }
+        else
+        {
+            Debug.LogWarning("Grid Size isn't working");
+        }
     }
 
     private void Update()
@@ -130,6 +141,8 @@ public class GridManager : MonoBehaviour
         }
 
         ghostObject = Instantiate(obstaclePrefab);
+        Vector3 ghostScale = new Vector3(gridSize, gridSize, gridSize);
+        ghostObject.transform.localScale = ghostScale;
         ghostObject.GetComponent<Collider>().enabled = false;
         ghostObject.name = "Ghost";
 
@@ -223,6 +236,7 @@ public class GridManager : MonoBehaviour
     void PlaceObject()
     {
         Vector2Int gridCell = WorldToGrid(ghostObject.transform.position);
+        Vector3 placeScale = new Vector3(gridSize, gridSize, gridSize);
 
         // Place Obstacles
         if (currentMode == PlacementMode.PlaceObstacle)
@@ -231,6 +245,7 @@ public class GridManager : MonoBehaviour
             {
                 Vector3 placePos = GridToWorld(gridCell);
                 GameObject newObstacle = Instantiate(obstaclePrefab, placePos, Quaternion.identity);
+                newObstacle.transform.localScale = placeScale;
                 spawnedObstacles.Add(newObstacle);
                 occupiedPositions.Add(gridCell); // The cell is filled
             }
@@ -266,6 +281,7 @@ public class GridManager : MonoBehaviour
                 GameObject newAgent = Instantiate(agentPrefab, placePos, Quaternion.identity);
                 newAgent.name = "agent" + id;
                 id++;
+                newAgent.transform.localScale = placeScale;
                 spawnedAgents.Add(newAgent);
                 occupiedPositions.Add(gridCell);
             }
@@ -340,6 +356,8 @@ public class GridManager : MonoBehaviour
         // Place and label taken
         Vector3 placePos = GridToWorld(newCell);
         instance = Instantiate(prefab, placePos, Quaternion.identity);
+        Vector3 markerScale = new Vector3(gridSize, gridSize, gridSize);
+        instance.transform.localScale = markerScale;
         gridPos = newCell;
         //occupiedPositions.Add(newCell);
 
@@ -520,7 +538,7 @@ public class GridManager : MonoBehaviour
                 agents[i].GetComponent<FollowPath>().SetPath(smoothedWorldPath);
                 VisualizePath(worldPath);
                 VisualizePath(smoothedWorldPath);
-                StartCoroutine(agents[i].GetComponent<FollowPath>().TryEndPathFollow(i));
+                //StartCoroutine(agents[i].GetComponent<FollowPath>().TryEndPathFollow(i));
             }
         }
     }
@@ -553,6 +571,7 @@ public class GridManager : MonoBehaviour
     }
 
     // Path Smoothing
+    /*
     List<Vector3> SmoothPath(List<Vector3> path)
     {
         if (path == null || path.Count < 2)
@@ -596,6 +615,7 @@ public class GridManager : MonoBehaviour
 
         return smoothedPath;
     }
+    */
 
     // Quadratic Bezier
     Vector3 QuadraticBezier(Vector3 startPoint, Vector3 controlPoint, Vector3 endPoint, float t)
@@ -652,5 +672,34 @@ public class GridManager : MonoBehaviour
         }
 
         return interpolatedPath;
+    }
+
+    // Update Grid UI
+    public void UpdateGridSize()
+    {
+        if (gridSizeInputField == null) return;
+
+        if (float.TryParse(gridSizeInputField.text, out float newSize))
+        {
+            if (newSize <= 0)
+            {
+                gridSizeInputField.text = gridSize.ToString();
+                return;
+            }
+
+            // Ensure Size Change
+            if (Mathf.Approximately(gridSize, newSize))
+            {
+                return;
+            }
+
+            gridSize = newSize;
+            ResetBoard();
+            ClearPath();
+        }
+        else
+        {
+            gridSizeInputField.text = gridSize.ToString();
+        }
     }
 }

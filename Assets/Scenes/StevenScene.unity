@@ -516,8 +516,12 @@ PrefabInstance:
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     - target: {fileID: 4417683729007539937, guid: f82c7ad641b653144a9e10eba9ae39f0, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 169.8414
+      objectReference: {fileID: 0}
+    - target: {fileID: 4417683729007539937, guid: f82c7ad641b653144a9e10eba9ae39f0, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -288
+      value: -311.4
       objectReference: {fileID: 0}
     - target: {fileID: 4417683729007539937, guid: f82c7ad641b653144a9e10eba9ae39f0, type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -790,6 +794,14 @@ PrefabInstance:
       propertyPath: obstaclePrefab
       value: 
       objectReference: {fileID: 1037764709896090390, guid: 8302425a2d2efba4e98d37d0050cb820, type: 3}
+    - target: {fileID: 1568921809193765474, guid: 7040ba39619752c4094a1a428c7eb769, type: 3}
+      propertyPath: pathTilePrefab
+      value: 
+      objectReference: {fileID: 8181267146607274530, guid: e0963cef12a93074bb86b1445c669f7f, type: 3}
+    - target: {fileID: 1568921809193765474, guid: 7040ba39619752c4094a1a428c7eb769, type: 3}
+      propertyPath: obstacleLayer.m_Bits
+      value: 8
+      objectReference: {fileID: 0}
     - target: {fileID: 1568921809193765475, guid: 7040ba39619752c4094a1a428c7eb769, type: 3}
       propertyPath: m_Name
       value: GridManager
