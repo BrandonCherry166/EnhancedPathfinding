@@ -1,8 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+
 //using System.Drawing; //Might cause conflict
 using UnityEngine;
 using UnityEngine.EventSystems;
+using static Unity.IO.LowLevel.Unsafe.AsyncReadManagerMetrics;
 
 public class GridManager : MonoBehaviour
 {
@@ -44,11 +47,16 @@ public class GridManager : MonoBehaviour
     private Vector2Int? agentPos;
 
     public bool isRunning = false;
-    private List <Vector2Int> currentPath;
+    public List<bool> runningList;
+    private Dictionary<int, List <Vector2Int>> currentPaths;
+
+    int id = 0;
 
     private void Start()
     {
         CreateGhostObject(obstaclePrefab);
+        currentPaths = new();
+        runningList = new();
     }
 
     private void Update()
@@ -93,6 +101,20 @@ public class GridManager : MonoBehaviour
                 PlaceObject();
             }
             */
+        }
+        bool flag = false;
+        for (int i = 0; i < runningList.Count; i++)
+        {
+            if (runningList[i])
+            {
+                flag = true;
+                break;
+            }
+        }
+
+        if (!flag)
+        {
+            isRunning = false;
         }
     }
     void CreateGhostObject(GameObject obstaclePrefab)
@@ -209,10 +231,14 @@ public class GridManager : MonoBehaviour
                 occupiedPositions.Add(gridCell); // The cell is filled
             }
 
-            if (isRunning)
+            if (!isRunning)
             {
-                ReRunPathfinding(gridCell);
+                return;
             }
+            
+
+           ReRunPathfinding(gridCell, false);
+
         }
 
         // Set Source
@@ -234,6 +260,8 @@ public class GridManager : MonoBehaviour
             {
                 Vector3 placePos = GridToWorld(gridCell);
                 GameObject newAgent = Instantiate(agentPrefab, placePos, Quaternion.identity);
+                newAgent.name = "agent" + id;
+                id++;
                 spawnedAgents.Add(newAgent);
                 occupiedPositions.Add(gridCell);
             }
@@ -268,20 +296,23 @@ public class GridManager : MonoBehaviour
 
                 if (isRunning)
                 {
-                    bool wasOnPath = false;
-                    foreach (var cell in currentPath)
+                    for (int i = 0; i < currentPaths.Count; i++)
                     {
-                        if (cell == gridCell)
+                        bool wasOnPath = false;
+                        foreach (var cell in currentPaths[i])
                         {
-                            wasOnPath = true;
-                            break;
+                            if (cell == gridCell)
+                            {
+                                wasOnPath = true;
+                                break;
+                            }
                         }
-                    }
 
-                    // Rerun
-                    if (wasOnPath)
-                    {
-                        RunPathfinding();
+                        // Rerun
+                        if (wasOnPath)
+                        {
+                            ReRunPathfinding(WorldToGrid(obstacleToRemove.transform.position), false); 
+                        }
                     }
                 }
             }
@@ -343,6 +374,9 @@ public class GridManager : MonoBehaviour
         occupiedPositions.Clear();
         sourcePos = null;
         targetPos = null;
+
+        runningList.Clear();
+        isRunning = false;
     }
 
     public void PlaceObstacle()
@@ -380,12 +414,13 @@ public class GridManager : MonoBehaviour
 
         isRunning = true;
 
-        GameObject[] agents = GameObject.FindGameObjectsWithTag("Agent");
+        GameObject[] agents = GameObject.FindGameObjectsWithTag("Agent").OrderBy(a => a.name).ToArray();
 
         for (int i = 0; i < agents.Length; i++)
         {
             if (agents[i].name == "Ghost") continue;
 
+            runningList.Add(true);
             Vector2Int agentGridPos = WorldToGrid(agents[i].transform.position);
 
             List<Vector2Int> path = agents[i].GetComponent<Pathfinding>().FindPath(agentGridPos, targetPos.Value, occupiedPositions);
@@ -397,7 +432,7 @@ public class GridManager : MonoBehaviour
                 {
                     worldPath.Add(GridToWorld(cell));
                 }
-                currentPath = path;
+                currentPaths[i] = path;
                 agents[i].GetComponent<FollowPath>().SetPath(worldPath);
             }
             else
@@ -408,30 +443,39 @@ public class GridManager : MonoBehaviour
         }
     }
 
-    public void ReRunPathfinding(Vector2Int newCell)
+    public void ReRunPathfinding(Vector2Int newCell, bool addingCell)
     {
-        bool flag = false;
+        Debug.Log("Rerun"); 
         if (spawnedAgents.Count == 0 || !targetPos.HasValue)
         {
             return;
         }
 
-        foreach (var cell in currentPath)
+        if (addingCell)
         {
-            if (cell == newCell)
+            for (int i = 0; i < currentPaths.Count; i++)
             {
-                flag = true;
+                bool flag = false;
+                foreach (var cell in currentPaths[i])
+                {
+                    if (cell == newCell)
+                    {
+                        flag = true;
+                        break;
+                    }
+                }
+
+                if (!flag)
+                {
+                    Debug.Log("Path Not Updated");
+                    return;
+                }
+
             }
         }
 
-        if (!flag)
-        {
-            Debug.Log("Path Not Updated");
-            return;
-        }
-        isRunning = true;
+         GameObject[] agents = GameObject.FindGameObjectsWithTag("Agent").OrderBy(a => a.name).ToArray();
 
-        GameObject[] agents = GameObject.FindGameObjectsWithTag("Agent");
 
         for (int i = 0; i < agents.Length; i++)
         {
@@ -445,9 +489,10 @@ public class GridManager : MonoBehaviour
                 {
                     worldPath.Add(GridToWorld(cell));
                 }
-                currentPath = path;
+                currentPaths[i] = path;
                 Debug.Log("Path Updated");
                 agents[i].GetComponent<FollowPath>().SetPath(worldPath);
+                StartCoroutine(agents[i].GetComponent<FollowPath>().TryEndPathFollow(i));
             }
         }
     }

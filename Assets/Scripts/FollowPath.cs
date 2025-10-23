@@ -29,9 +29,20 @@ public class FollowPath : MonoBehaviour
             currentIndex++;
         }
 
-        if (currentIndex == path.Count - 1)
+        
+    }
+
+    public IEnumerator TryEndPathFollow(int index)
+    {
+        bool flag = true;
+        while (flag)
         {
-            GameObject.FindGameObjectWithTag("GridManager").GetComponent<GridManager>().isRunning = false;
+            if (currentIndex == path.Count - 1)
+            {
+                GameObject.FindGameObjectWithTag("GridManager").GetComponent<GridManager>().runningList[index] = false;
+                flag = false;
+            }
+            yield return new WaitForSeconds(1.0f);
         }
     }
 }
