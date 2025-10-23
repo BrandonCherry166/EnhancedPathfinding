@@ -43,7 +43,7 @@ public class Pathfinding : MonoBehaviour
                     continue;
                 }
 
-                float tentativeG = current.gCost + Vector2Int.Distance(current.pos, neighborPos);
+                float tentativeG = current.gCost + Heuristic(current.pos, neighborPos);
 
                 if (!allNodes.TryGetValue(neighborPos, out Node neighbor))
                 {
@@ -54,7 +54,7 @@ public class Pathfinding : MonoBehaviour
                 if (!openSet.Contains(neighbor) || tentativeG < neighbor.gCost)
                 {
                     neighbor.gCost = tentativeG;
-                    neighbor.hCost = Vector2Int.Distance(neighborPos, target);
+                    neighbor.hCost = Heuristic(neighborPos, target);
                     neighbor.parent = current;
 
                     if (!openSet.Contains(neighbor))
@@ -96,6 +96,11 @@ public class Pathfinding : MonoBehaviour
         path.Reverse();
         Debug.Log(path.Count);
         return path;
+    }
+
+    float Heuristic(Vector2Int a, Vector2Int b)
+    {
+        return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y-b.y);
     }
 }
 
