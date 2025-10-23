@@ -41,6 +41,8 @@ public class GridManager : MonoBehaviour
 
     private Vector2Int? agentPos;
 
+    public bool isRunning = false;
+
     private void Start()
     {
         CreateGhostObject(obstaclePrefab);
@@ -183,6 +185,11 @@ public class GridManager : MonoBehaviour
                 spawnedObstacles.Add(newObstacle);
                 occupiedPositions.Add(gridCell); // The cell is filled
             }
+
+            if (isRunning)
+            {
+                ReRunPathfinding();
+            }
         }
 
         // Set Source
@@ -285,14 +292,13 @@ public class GridManager : MonoBehaviour
         {
             return;
         }
+        isRunning = true;
 
         GameObject[] agents = GameObject.FindGameObjectsWithTag("Agent");
 
         for (int i = 0; i < agents.Length; i++)
         {
-            Debug.Log("Check 1");
             List<Vector2Int> path = agents[i].GetComponent<Pathfinding>().FindPath(sourcePos.Value, targetPos.Value, occupiedPositions);
-            Debug.Log("Check 2.5");
             if (path != null && agentInstance != null)
             {
                 List<Vector3> worldPath = new List<Vector3>();
@@ -300,7 +306,31 @@ public class GridManager : MonoBehaviour
                 {
                     worldPath.Add(GridToWorld(cell));
                 }
-                Debug.Log("Check 2.75");
+                agents[i].GetComponent<FollowPath>().SetPath(worldPath);
+            }
+        }
+    }
+
+    public void ReRunPathfinding()
+    {
+        if (!sourcePos.HasValue || !targetPos.HasValue)
+        {
+            return;
+        }
+        isRunning = true;
+
+        GameObject[] agents = GameObject.FindGameObjectsWithTag("Agent");
+
+        for (int i = 0; i < agents.Length; i++)
+        {
+            List<Vector2Int> path = agents[i].GetComponent<Pathfinding>().FindPath(WorldToGrid(agents[i].transform.position), targetPos.Value, occupiedPositions);
+            if (path != null && agentInstance != null)
+            {
+                List<Vector3> worldPath = new List<Vector3>();
+                foreach (var cell in path)
+                {
+                    worldPath.Add(GridToWorld(cell));
+                }
                 agents[i].GetComponent<FollowPath>().SetPath(worldPath);
             }
         }

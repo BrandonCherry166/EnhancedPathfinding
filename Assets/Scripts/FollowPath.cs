@@ -28,5 +28,10 @@ public class FollowPath : MonoBehaviour
         {
             currentIndex++;
         }
+
+        if (currentIndex == path.Count - 1)
+        {
+            GameObject.FindGameObjectWithTag("GridManager").GetComponent<GridManager>().isRunning = false;
+        }
     }
 }
