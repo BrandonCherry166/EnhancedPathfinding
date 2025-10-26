@@ -54,7 +54,9 @@ public class GridManager : MonoBehaviour
 
     public bool isRunning = false;
     public List<bool> runningList;
-    private Dictionary<int, List<Vector2Int>> currentPaths;
+    //private Dictionary<int, List<Vector2Int>> currentPaths;
+    private Dictionary<int, List<Vector2Int>> currentPaths = new Dictionary<int, List<Vector2Int>>();
+
 
     int id = 0;
 
@@ -232,6 +234,7 @@ public class GridManager : MonoBehaviour
     }
     */
 
+
     // Gets the right placement to place
     void PlaceObject()
     {
@@ -247,32 +250,31 @@ public class GridManager : MonoBehaviour
                 GameObject newObstacle = Instantiate(obstaclePrefab, placePos, Quaternion.identity);
                 newObstacle.transform.localScale = placeScale;
                 spawnedObstacles.Add(newObstacle);
-                occupiedPositions.Add(gridCell); // The cell is filled
+                occupiedPositions.Add(gridCell); // mark as occupied
+
+                // Only rerun if pathfinding is active
+                if (isRunning)
+                {
+                    Debug.Log("Calling ReRunPathfinding (obstacle added)");
+                    ReRunPathfinding(gridCell, true); 
+                }
             }
-
-            if (!isRunning)
-            {
-                return;
-            }
-
-
-            ReRunPathfinding(gridCell, false);
-
+            return;
         }
 
-        // Set Source
+        //  Set Source
         else if (currentMode == PlacementMode.SetSource)
         {
             SetMarker(ref sourceInstance, sourcePrefab, ref sourcePos, gridCell);
         }
 
-        // Set Target
+        //  Set Target
         else if (currentMode == PlacementMode.SetTarget)
         {
             SetMarker(ref targetInstance, targetPrefab, ref targetPos, gridCell);
         }
 
-        // Place Agent
+        //  Place Agent
         else if (currentMode == PlacementMode.PlaceAgent)
         {
             if (!occupiedPositions.Contains(gridCell))
@@ -288,54 +290,27 @@ public class GridManager : MonoBehaviour
         }
     }
 
+
     //Delete
     void DeleteObject()
     {
         Vector2Int gridCell = WorldToGrid(ghostObject.transform.position);
 
-        if (occupiedPositions.Contains(gridCell))
+        if (!occupiedPositions.Contains(gridCell)) return;
+
+        GameObject obstacleToRemove = spawnedObstacles
+            .FirstOrDefault(o => WorldToGrid(o.transform.position) == gridCell);
+
+        if (obstacleToRemove == null) return;
+
+        spawnedObstacles.Remove(obstacleToRemove);
+        Destroy(obstacleToRemove);
+        occupiedPositions.Remove(gridCell);
+
+        if (isRunning)
         {
-            GameObject obstacleToRemove = null;
-
-            // Loop through obstacles
-            foreach (GameObject obstacle in spawnedObstacles)
-            {
-                if (WorldToGrid(obstacle.transform.position) == gridCell)
-                {
-                    obstacleToRemove = obstacle;
-                    break;
-                }
-            }
-
-            // Remove if Found
-            if (obstacleToRemove != null)
-            {
-                spawnedObstacles.Remove(obstacleToRemove);
-                Destroy(obstacleToRemove);
-                occupiedPositions.Remove(gridCell);
-
-                if (isRunning)
-                {
-                    for (int i = 0; i < currentPaths.Count; i++)
-                    {
-                        bool wasOnPath = false;
-                        foreach (var cell in currentPaths[i])
-                        {
-                            if (cell == gridCell)
-                            {
-                                wasOnPath = true;
-                                break;
-                            }
-                        }
-
-                        // Rerun
-                        if (wasOnPath)
-                        {
-                            ReRunPathfinding(WorldToGrid(obstacleToRemove.transform.position), false);
-                        }
-                    }
-                }
-            }
+            Debug.Log("Calling ReRunPathfinding (obstacle removed)");
+            ReRunPathfinding(gridCell, false); // removed cell
         }
     }
 
@@ -348,7 +323,11 @@ public class GridManager : MonoBehaviour
             if (prefab != targetPrefab)
             {
                 if (gridPos.HasValue)
-                    occupiedPositions.Remove(gridPos.Value);
+                {
+                    occupiedPositions.Remove(gridPos.Value);   
+                }
+                
+
             }
             Destroy(instance);
         }
@@ -481,84 +460,135 @@ public class GridManager : MonoBehaviour
         }
     }
 
-    public void ReRunPathfinding(Vector2Int newCell, bool addingCell)
+
+
+    public void ReRunPathfinding(Vector2Int changedCell, bool addingCell)
     {
-        ClearPath();
+        Debug.Log("ReRunPathfinding called!");
 
-        Debug.Log("Rerun");
+        Debug.Log("ReRunPathfinding triggered at " + changedCell);
         if (spawnedAgents.Count == 0 || !targetPos.HasValue)
-        {
             return;
-        }
 
-        if (addingCell)
-        {
-            for (int i = 0; i < currentPaths.Count; i++)
-            {
-                bool flag = false;
-                foreach (var cell in currentPaths[i])
-                {
-                    if (cell == newCell)
-                    {
-                        flag = true;
-                        break;
-                    }
-                }
+        GameObject[] agents = GameObject.FindGameObjectsWithTag("Agent")
+                                       .OrderBy(a => a.name)
+                                       .ToArray();
 
-                if (!flag)
-                {
-                    Debug.Log("Path Not Updated");
-                    return;
-                }
-
-            }
-        }
-
-        GameObject[] agents = GameObject.FindGameObjectsWithTag("Agent").OrderBy(a => a.name).ToArray();
-
+        // Clear only visualization (keep currentPaths cache)
+        ClearPath();
 
         for (int i = 0; i < agents.Length; i++)
         {
             if (agents[i].name == "Ghost") continue;
 
-            List<Vector2Int> path = agents[i].GetComponent<Pathfinding>().FindPath(WorldToGrid(agents[i].transform.position), targetPos.Value, occupiedPositions);
-            if (path != null)
+            bool needsRepath = false;
+
+            // Checks if have a cached path for this agent
+            if (currentPaths.TryGetValue(i, out List<Vector2Int> oldPath))
             {
-                List<Vector3> worldPath = new List<Vector3>();
-                foreach (var cell in path)
+                // Only recompute if changed cell blocks the path
+                if (addingCell && oldPath.Contains(changedCell))
                 {
-                    worldPath.Add(GridToWorld(cell));
+                    needsRepath = true; // path now blocked
                 }
-                currentPaths[i] = path;
-                Debug.Log("Path Updated");
+                else if (!addingCell && oldPath.Contains(changedCell))
+                {
+                    needsRepath = true;
+                }
+                else
+                {
+                    needsRepath = false; // unaffected path, can be reused
+                }
+            }
+            else
+            {
+                // No cached path yet
+                needsRepath = true;
+            }
+
+
+            if (!needsRepath)
+            {
+                //  Path unaffected: reuse it directly
+                Debug.Log($"Reusing cached path for agent {i}");
+                List<Vector3> cachedWorldPath = new List<Vector3>();
+                foreach (var cell in oldPath)
+                    cachedWorldPath.Add(GridToWorld(cell));
+
+                agents[i].GetComponent<FollowPath>().SetPath(cachedWorldPath);
+                //VisualizePath(cachedWorldPath);
+                Debug.Log("Reused path branch hit");
+                VisualizePath(cachedWorldPath, reused: true);
+                continue;
+            }
+
+            // Path affected: recompute from scratch
+            List<Vector2Int> newPath = agents[i]
+                .GetComponent<Pathfinding>()
+                .FindPath(WorldToGrid(agents[i].transform.position),
+                          targetPos.Value, occupiedPositions);
+
+            if (newPath != null)
+            {
+                currentPaths[i] = newPath;
+
+                List<Vector3> worldPath = new List<Vector3>();
+                foreach (var cell in newPath)
+                    worldPath.Add(GridToWorld(cell));
 
                 List<Vector3> smoothedWorldPath = InterpolatePathWithSplines(worldPath, splineSamplesPerSegment);
 
-                //agents[i].GetComponent<FollowPath>().SetPath(worldPath);
                 agents[i].GetComponent<FollowPath>().SetPath(smoothedWorldPath);
-                VisualizePath(worldPath);
                 VisualizePath(smoothedWorldPath);
-                //StartCoroutine(agents[i].GetComponent<FollowPath>().TryEndPathFollow(i));
+
+                Debug.Log($"Recomputed path for agent {i}");
             }
         }
+
+        Debug.Log("ReRunPathfinding complete (information reuse applied).");
     }
 
     // Path
-    void VisualizePath(List<Vector3> path)
+    void VisualizePath(List<Vector3> path, bool reused = false)
     {
         Quaternion tileRotation = Quaternion.Euler(90, 0, 0);
         float tileScale = gridSize * 0.9f;
         Vector3 tileScaleVector = new Vector3(tileScale, tileScale, 1f);
+        Color tileColor = reused ? Color.green : Color.red;
 
         foreach (Vector3 pos in path)
         {
-            // Tiles
             Vector3 tilePos = new Vector3(pos.x, 0.05f, pos.z);
             GameObject tile = Instantiate(pathTilePrefab, tilePos, tileRotation);
             tile.transform.localScale = tileScaleVector;
+
+            // Change color
+            Renderer renderer = tile.GetComponentInChildren<Renderer>();
+            if (renderer != null)
+            renderer.material = new Material(renderer.material); // Clone material so it’s unique
+     
+            renderer.material.color = tileColor;
+
             spawnedPathTiles.Add(tile);
         }
     }
+
+
+    //void VisualizePath(List<Vector3> path)
+    //{
+    //    Quaternion tileRotation = Quaternion.Euler(90, 0, 0);
+    //    float tileScale = gridSize * 0.9f;
+    //    Vector3 tileScaleVector = new Vector3(tileScale, tileScale, 1f);
+
+    //    foreach (Vector3 pos in path)
+    //    {
+    //        // Tiles
+    //        Vector3 tilePos = new Vector3(pos.x, 0.05f, pos.z);
+    //        GameObject tile = Instantiate(pathTilePrefab, tilePos, tileRotation);
+    //        tile.transform.localScale = tileScaleVector;
+    //        spawnedPathTiles.Add(tile);
+    //    }
+    //}
 
     // Clear Path
     void ClearPath()
