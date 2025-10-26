@@ -112,7 +112,6 @@ public class FollowPath : MonoBehaviour
             }
         }
 
-        // Optional: Add LookRotation logic here if desired
         Vector3 direction = (target - transform.position).normalized;
         if (direction != Vector3.zero)
         {
